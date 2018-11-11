@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+</head>
+
+<body>
+
+    <div class="numberPad">
+        <ul class="numberList clearfix">
+            <li class="digit">1</li>
+            <li class="digit">2</li>
+            <li class="digit">3</li>
+            <li class="digit">4</li>
+            <li class="digit">5</li>
+            <li class="digit">6</li>
+            <li class="digit">7</li>
+            <li class="digit">8</li>
+            <li class="digit">9</li>
+            <li class="digit">0</li>
+        </ul>
+    </div>
+    <br> <br> <br> <br> <br> <br>
+    <button onclick="inDanger()"> Yes I am in Danger </button>
+
+
+    <script>
+
+        var lat;
+        var lng;
+        var dateTime;
+        var displaySafe=true; //to display safety screen
+
+        //Opens the danger confirmation page
+        function inDanger() {
+	console.log('Called: inDanger');
+	displaySafe= false;
+    getGPSLocation();
+}
+
+// Gets user location
+function getGPSLocation() {
+	console.log('Called: getGPSLocation');
+
+    //GPS
+    //navigator.geolocation.getCurrentPosition(success, error, { maximumAge: 60000, timeout: 5000 });
+    navigator.geolocation.getCurrentPosition(success, errorCoor, {maximumAge:60000, timeout:5000, enableHighAccuracy:true});
+
+    //Date and time
+    dateTime = tizen.time.getCurrentDateTime();
+    console.log('Date and Time Test: ' + dateTime.toLocaleString());
+}
+
+// Callback in case of error
+function error(error) {
+    console.log('Called: error');
+    console.log(error);
+    switch (error.code) {
+        case error.PERMISSION_DENIED:
+            console.log("permission denied");
+            break;
+        case error.POSITION_UNAVAILABLE:
+            console.log("your position is unavailable");
+            break;
+        case error.TIMEOUT:
+            console.log("a timeout occured");
+            break;
+        case error.UNKNOWN_ERROR:
+            console.log("an unknow error occured");
+            break;
+    }
+}
+
+function success(position) {
+    console.log('Called: success');
+
+    lat = position.coords.latitude;
+    lng = position.coords.longitude;
+
+    console.log("Current position Test: " + lat + " " + lng);
+    console.log('after GPS')
+
+    //send the data
+    $.ajax({
+        url: "http://localhost:2500/processalert_post",
+        type: "POST",
+        data: {
+            lat: lat,
+            lng: lng,
+            dateTime: dateTime
+        },
+        //need to explicitly add this parser heading
+        headers: {
+            "Content-type": "application/x-www-form-urlencoded"
+        },
+        success: function (response, status) {
+            alert("Response: " + response + "\nStatus: " + status);
+        }
+    })
+    
+    //if(displaySafe)
+    	//window.open("SafetyConfirmed.html", "_self" );
+   // else
+      	//window.open("DangerConfirmed.html", "_self" );
+        
+	//displaySafe=true; //reset flag
+}
+
+
+        /* Validate the user PIN entry */
+        var fullpin = "";
+        var pinstr = "";
+        var count = 0;
+
+        jQuery(document).ready(function () {
+
+            jQuery('.numberList .digit').click(function () {
+                var numVal = jQuery(this).html();
+                count++;
+
+                if (count == 4) {
+                    fullpin = pinstr + numVal;
+
+                    if (fullpin === "1234") {
+                        window.open("SafetyConfirmed.html", "_self");
+                    }
+                    else if (fullpin === "5678") {
+                       getGPSLocation();
+                    }
+                    else {
+                        alert("Wrong PIN! Please try again");
+                        pinstr = "";
+                        numVal = "";
+                        count = 0;
+                    }
+                };
+
+                pinstr = pinstr + numVal;
+            });
+        });
+
+        /* If the watch's bezel is rotated */
+        document.addEventListener('rotarydetent', function (ev) {
+            var direction = ev.detail.direction;
+            /* Add behavior for detent detected event with a direction value */
+
+            //if user accidentally presses 'safebutton' and wants to go back to dangerPage
+            if (direction == 'CW' || direction == 'CCW') {
+                window.open("DangerConfirmed.html", "_self"); //open in the same window
+            }
+        });
+
+    </script>
+
+
+    <style>
+        body {
+            background-color: rgb(41, 198, 57);
+        }
+
+        /*the grey thing*/
+        .clearfix:before,
+        .clearfix:after {
+            display: table;
+            clear: both;
+            height: 0px;
+            content: "";
+        }
+
+        /*also the grey thing*/
+        .numberPad {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 80%;
+            background-color: #9a99;
+        }
+
+        /*all numbers together*/
+        .numberList {
+            margin: auto;
+            list-style-type: none;
+            width: 80%;
+            position: absolute;
+            right: 20px;
+            left: 0px;
+            display: block;
+        }
+
+        /*each number*/
+        .numberList li {
+            display: block;
+            width: 50px;
+            height: 50px;
+            margin: 0.05%;
+            text-align: center;
+            font-size: xx-large;
+            font-family: Arial, sans-serif;
+            float: left;
+            color: #fff;
+            cursor: pointer;
+            background-color: rgb(41, 198, 57);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            /*make them circles*/
+            line-height: 50px;
+            /*this moved the numbers*/
+        }
+
+        .numberList li:hover {
+            /*	
+  background-color: #333366;*/
+            background-color: #fff;
+            color: rgb(41, 198, 57);
+            font-size: 250%;
+        }
+    </style>
+
+</body>
+
+</html>
